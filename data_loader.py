@@ -60,9 +60,7 @@ def load_data(data, word_dict, labels=labels):
 			X+= [q1]
 			Y+= [q2]
 			Z+= [labels[label]]
-	Z = to_categorical(Z)
-			# padding
 	X = sequence.pad_sequences(X, maxlen = max_len_sentence)
 	Y = sequence.pad_sequences(Y, maxlen = max_len_sentence)
-	
+	Z = to_categorical(Z)
 	return X, Y, Z
