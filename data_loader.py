@@ -50,7 +50,6 @@ def load_data(data, word_dict, labels=labels):
 		q1 = map_to_id(tokenize(q1), word_dict)
 		q2 = map_to_id(tokenize(q2), word_dict)
 		
-		# if the question is too long 
 		if len(q1) > max_len_sentence:
 			q1 = q1[:max_len_sentence]
 		if len(q2) > max_len_sentence:
