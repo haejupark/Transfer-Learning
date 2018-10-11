@@ -20,8 +20,7 @@ def word_dict(data):
 				word_dict[word] = len(word_dict)
 		for word in q2:
 			if word not in word_dict:
-				word_dict[word] = len(word_dict)
-				
+				word_dict[word] = len(word_dict)				
 	return word_dict
 
 def get_vectors(word_dict, vec_file, emb_size):
@@ -33,12 +32,11 @@ def get_vectors(word_dict, vec_file, emb_size):
 		line = line.split()
 		vec[line[0]] = np.array([float(x) for x in line[-emb_size:]])
 	f.close()
-    
+   
 	for key in word_dict:
 		low = key.lower()
 		if low in vec:
 			word_vectors[word_dict[key]] = vec[low]
-
 	return word_vectors
 
 def map_to_id(data, vocab):
@@ -58,8 +56,9 @@ def load_data(data, word_dict, labels=labels):
 		if label in labels:
 			X+= [q1]
 			Y+= [q2]
-			Z+= [labels[label]]
+			Z+= [labels[label]]	
 	X = sequence.pad_sequences(X, maxlen = max_len_sentence)
 	Y = sequence.pad_sequences(Y, maxlen = max_len_sentence)
 	Z = to_categorical(Z)
 	return X, Y, Z
+		
