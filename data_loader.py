@@ -9,7 +9,7 @@ def tokenize(data):
 
 def word_dict(data):
 	word_dict = {}
-	word_dict['ㄱ'] = len(word_dict)
+	word_dict['PAD'] = len(word_dict)
 	word_dict['UNK'] = len(word_dict)
 	for line in data:
 		q1 = tokenize(line[1])
