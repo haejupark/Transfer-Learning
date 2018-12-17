@@ -105,16 +105,8 @@ print(model.summary())
 model.compile(optimizer=Adam(0.0005), loss=['categorical_crossentropy','categorical_crossentropy'], metrics=['accuracy'])
 
 
-filepath= "models/weights-enli-{val_snli_acc:.2f}-urnli-{val_mnli_acc:.2f}.hdf5"
-checkpoint = ModelCheckpoint(filepath, monitor='val_snli_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='max')
-
-lr_sched = ReduceLROnPlateau(monitor='val_snli_loss', factor=0.2, patience=1, cooldown=1, verbose=1)
-early_stopping = EarlyStopping(monitor='val_snli_acc', patience=5)
-
-callbacks_list = [checkpoint, lr_sched, early_stopping]
-
-results = model.fit([source_trainX, source_trainY, source_trainL, source2_trainX, source2_trainY, source2_trainL], [source_trainZ, source2_trainZ], 
-			validation_data = ([source_devX, source_devY, source_devL, source2_devX, source2_devY, source2_devL], [source_devZ, source2_devZ]),
-			batch_size = 1024,
-			shuffle = True,
-			epochs=70)
+model.fit([source_trainX, source_trainY, source_trainL, source2_trainX, source2_trainY, source2_trainL], [source_trainZ, source2_trainZ], 
+		validation_data = ([source_devX, source_devY, source_devL, source2_devX, source2_devY, source2_devL], [source_devZ, source2_devZ]),
+		batch_size = 1024,
+		shuffle = True,
+		epochs=70)
