@@ -6,8 +6,6 @@ from keras.activations import softmax
 from keras.regularizers import l2
 from keras.models import *
 import pandas as pd
-from sklearn.decomposition import PCA
-from keras.callbacks import ModelCheckpoint, LearningRateScheduler, ReduceLROnPlateau, EarlyStopping
 from keras.optimizers import Adam
 from flipGradientTF import *
 
@@ -98,7 +96,6 @@ s2_out = classifier2(s2_merged)
 
 
 model = Model([s1_input1,s1_input2,s1_tasklabel,s2_input1,s2_input2,s2_tasklabel], [s1_out, s2_out])
-features_extractor = Model([s1_input1,s1_input2,s1_tasklabel,s2_input1,s2_input2,s2_tasklabel],[s1_q1_shared,s1_q2_shared,s2_q1_shared,s2_q2_shared])
 model.add_loss(adv_loss)
 
 print(model.summary())
