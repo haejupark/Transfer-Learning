@@ -83,13 +83,13 @@ s2_merged = Concatenate()([s2_q1_encoded, s2_q2_encoded, submult(s2_q1_encoded, 
 def classifier(merged):
 	dense = Dense(lstm_dimension, activation='tanh')(merged)
 	dense = Dropout(dropout_rate)(dense)
-	out = Dense(3, activation='softmax', name="snli")(dense)
+	out = Dense(3, activation='softmax')(dense)
 	return out
 
 def classifier2(merged):
 	dense = Dense(lstm_dimension, activation='tanh')(merged)
 	dense = Dropout(dropout_rate)(dense)
-	out = Dense(3, activation='softmax', name="mnli")(dense)
+	out = Dense(3, activation='softmax')(dense)
 	return out	
 	
 	
