@@ -56,13 +56,13 @@ def adversarial(merged):
 	return out
 
 Flip = GradientReversal(0.05)
-s1_q1_shared = Flip(s1_q1_shared)
-s1_q2_shared = Flip(s1_q2_shared)
-s2_q1_shared = Flip(s2_q1_shared)
-s2_q2_shared = Flip(s2_q2_shared)
+s1_q1_fliped = Flip(s1_q1_shared)
+s1_q2_fliped = Flip(s1_q2_shared)
+s2_q1_fliped = Flip(s2_q1_shared)
+s2_q2_fliped = Flip(s2_q2_shared)
 
-s1_shared = Concatenate()([s1_q1_shared, s1_q2_shared, submult(s1_q1_shared, s1_q2_shared)])
-s2_shared = Concatenate()([s2_q1_shared, s2_q2_shared, submult(s2_q1_shared, s2_q2_shared)])
+s1_shared = Concatenate()([s1_q1_fliped, s1_q2_fliped, submult(s1_q1_fliped, s1_q2_fliped)])
+s2_shared = Concatenate()([s2_q1_fliped, s2_q2_fliped, submult(s2_q1_fliped, s2_q2_fliped)])
 	
 shared_s1_out = adversarial(s1_shared)
 shared_s2_out = adversarial(s2_shared)	
