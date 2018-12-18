@@ -2,6 +2,7 @@ import sys
 
 word_embed_size = 300
 max_len_sentence = 50
+lambda1 = 0.05
 
 cnli_train_path = "data/cnli/cnli_train_processed.txt"
 cnli_dev_path = "data/cnli/cnli_dev_processed.txt"
