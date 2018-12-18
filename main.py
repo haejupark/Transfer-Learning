@@ -53,7 +53,7 @@ def adversarial(merged):
 	out = Dense(2, activation='softmax', name="adversarial")(dense)
 	return out
 
-Flip = GradientReversal(0.05)
+Flip = GradientReversal(1)
 s1_q1_fliped = Flip(s1_q1_shared)
 s1_q2_fliped = Flip(s1_q2_shared)
 s2_q1_fliped = Flip(s2_q1_shared)
@@ -96,7 +96,7 @@ s2_out = classifier2(s2_merged)
 
 
 model = Model([s1_input1,s1_input2,s1_tasklabel,s2_input1,s2_input2,s2_tasklabel], [s1_out, s2_out])
-model.add_loss(adv_loss)
+model.add_loss(adv_loss*lambda1)
 
 print(model.summary())
 model.compile(optimizer=Adam(0.0005), loss=['categorical_crossentropy','categorical_crossentropy'], metrics=['accuracy'])
