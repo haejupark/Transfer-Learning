@@ -37,13 +37,11 @@ class Multimodel(object):
 		self.dev_dir = setting.dev_dir
 		self.embed_dir = setting.embed_dir
 
-	def adversarial_loss(self, prem, hypo, label):
-		
+	def adversarial_loss(self, prem, hypo, label):		
 		# Gradient Reversal Layer
 		flip_gradient = GradientReversal(1)
 		flip_prem = flip_gradient(prem)
-		flip_hypo = flip_gradient(hypo)
-		
+		flip_hypo = flip_gradient(hypo)		
 		# merge and pass it to dense layer	
 		merged = Concatenate()([flip_prem, flip_hypo, submult(flip_prem,flip_hypo)])
 		dense = Dropout(self.drop_prob)(merged)
@@ -60,8 +58,7 @@ class Multimodel(object):
 		preds = Dense(3, activation='softmax')(dense)
 		return preds
 		
-	def train_model(self, source_language, target_language):
-		
+	def train_model(self, source_language, target_language):	
 		# Load source data (english)
 		source_train_name = self.train_dir+"multinli.train.%s.txt"%source_language
 		source_dev_name = self.dev_dir+"xnli_%s.txt"%source_language
@@ -79,9 +76,7 @@ class Multimodel(object):
 		if source_train_X is None:
 			print("++++++ Unable to train model +++++++")
 			return None	
-
 		############################################################
-
 		# Load target data (translated other language)
 		target_train_name = self.train_dir+"multinli.train.%s.txt"%target_language
 		target_dev_name = self.dev_dir+"xnli_%s.txt"%target_language
@@ -99,8 +94,7 @@ class Multimodel(object):
 		if target_train_X is None:
 			print("++++++ Unable to train model +++++++")
 			return None	
-		#############################################################
-			
+		#############################################################		
 		# Word embedding layer for source and target language	
 		source_embedding_layer = Embedding(len(source_word_vocab), self.word_dim, weights=[source_word_embeddings], input_length=(self.max_len,), trainable=False)
 		target_embedding_layer = Embedding(len(target_word_vocab), self.word_dim, weights=[target_word_embeddings], input_length=(self.max_len,), trainable=False)
@@ -118,8 +112,7 @@ class Multimodel(object):
 		
 		target_prem = target_embedding_layer(target_prem_input)
 		target_hypo = target_embedding_layer(target_hypo_input)
-		
-		
+			
 		# LSTM Encoder for Source Language, Target Language, and for Both
 		source_lstm_layer = Bidirectional(CuDNNLSTM(self.lstm_dim, return_sequences=True))
 		target_lstm_layer = Bidirectional(CuDNNLSTM(self.lstm_dim, return_sequences=True))
@@ -127,7 +120,6 @@ class Multimodel(object):
 		shared_lstm_layer = Bidirectional(CuDNNLSTM(self.lstm_dim, return_sequences=True))
 		
 		# Maxpooling LSTM encdoes vectors
-		
 		private_source_prem = GlobalMaxPooling1D()(source_lstm_layer(source_prem))
 		private_source_hypo = GlobalMaxPooling1D()(source_lstm_layer(source_hypo))
 		
@@ -135,7 +127,6 @@ class Multimodel(object):
 		private_target_hypo = GlobalMaxPooling1D()(target_lstm_layer(target_hypo))
 		
 		# Maxpooling Shared LSTM encodes vectors
-		
 		shared_source_prem = GlobalMaxPooling1D()(shared_lstm_layer(source_prem))
 		shared_source_hypo = GlobalMaxPooling1D()(shared_lstm_layer(source_hypo))
 		
@@ -179,7 +170,7 @@ class Multimodel(object):
 		
 		STAMP = 'lstm_%d_%d_%.1f' % (self.lstm_dim, self.dense_dim, self.drop_prob)
 		
-		filepath= checkpoint_dir + STAMP + "_%s_%s_{val_dense_8_acc:.2f}.h5"%source_language, target_language
+		filepath= checkpoint_dir + STAMP + "_%s_%s_{val_dense_8_acc:.2f}.h5"%(source_language, target_language)
 		checkpoint = ModelCheckpoint(filepath, monitor='val_dense_8_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='max')
 
 		lr_sched = ReduceLROnPlateau(monitor='val_dense_8_loss', factor=0.2, patience=1, cooldown=1, verbose=1)
