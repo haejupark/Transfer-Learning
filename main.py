@@ -179,11 +179,11 @@ class Multimodel(object):
 		
 		STAMP = 'lstm_%d_%d_%.1f' % (self.lstm_dim, self.dense_dim, self.drop_prob)
 		
-		filepath= checkpoint_dir + STAMP + "_%s_{val_dense_6_acc:.2f}_%s_{val_dense_8_acc:.2f}.h5"%(source_language, target_language)
-		checkpoint = ModelCheckpoint(filepath, monitor='val_dense_8_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='max')
+		filepath= checkpoint_dir + STAMP + "_%s_{val_dense_4_acc:.2f}_%s_{val_dense_6_acc:.2f}.h5"%(source_language, target_language)
+		checkpoint = ModelCheckpoint(filepath, monitor='val_dense_6_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='max')
 
-		lr_sched = ReduceLROnPlateau(monitor='val_dense_8_loss', factor=0.2, patience=1, cooldown=1, verbose=1)
-		early_stopping = EarlyStopping(monitor='val_dense_8_acc', patience=10)
+		lr_sched = ReduceLROnPlateau(monitor='val_dense_6_loss', factor=0.2, patience=1, cooldown=1, verbose=1)
+		early_stopping = EarlyStopping(monitor='val_dense_6_acc', patience=10)
 		
 		model.fit([source_train_X, source_train_Y, source_train_L, target_train_X, target_train_Y, target_train_L], [source_train_Z, target_train_Z], 
 				validation_data = ([source_val_X, source_val_Y, source_val_L, target_val_X, target_val_Y, target_val_L], [source_val_Z, target_val_Z]),
