@@ -46,31 +46,6 @@ def get_embeddings(word_dict, vec_file, emb_size):
 	
 def map_to_id(data, vocab):
 	return [vocab[word] if word in vocab else 1 for word in data]
-	
-def load_data(data, word_dict, task="snli", labels=labels):
-	X,Y,Z = [], [], []
-	for label, q1, q2 in data:
-		q1 = map_to_id(tokenize(q1), word_dict)
-		q2 = map_to_id(tokenize(q2), word_dict)	
-		if len(q1) > setting.max_len:
-			q1 = q1[:setting.max_len]
-		if len(q2) > setting.max_len:
-			q2 = q2[:setting.max_len]
-		if task == "snli":
-			X+= [q1]
-			Y+= [q2]
-			Z+= [labels[label]]		
-		else:
-			X+= [q1]
-			Y+= [q2]
-			Z+= [label]
-	X = sequence.pad_sequences(X, maxlen = setting.max_len)
-	Y = sequence.pad_sequences(Y, maxlen = setting.max_len)
-	if task =="snli":
-		Z = to_categorical(Z,num_classes=3)
-	else:
-		Z = to_categorical(Z,num_classes=2)
-	return X, Y, Z
 
 def create_train_dev_set(train_data, dev_data, word_dict, labels=labels):
 	train_X,train_Y,train_Z = [], [], []
