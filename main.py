@@ -37,20 +37,6 @@ class Multimodel(object):
 		self.dev_dir = setting.dev_dir
 		self.embed_dir = setting.embed_dir
 
-	def adversarial_loss(self, prem, hypo, label):		
-		# Gradient Reversal Layer
-		flip_gradient = GradientReversal(1)
-		flip_prem = flip_gradient(prem)
-		flip_hypo = flip_gradient(hypo)
-		
-		# merge and pass it to dense layer	
-		merged = Concatenate()([flip_prem, flip_hypo, submult(flip_prem,flip_hypo)])
-		dense = Dropout(self.drop_prob)(merged)
-		dense = Dense(self.dense_dim, kernel_initializer='uniform', activation='relu')(dense)
-		dense = Dropout(self.drop_prob)(dense)
-		out = Dense(2, activation='softmax')(dense)
-		adv_loss = K.mean(K.categorical_crossentropy(label, out))
-		return adv_loss
 		
 	def classifier(self, features):
 		dense = Dropout(self.drop_prob)(features)
@@ -137,10 +123,30 @@ class Multimodel(object):
 		shared_target_prem = GlobalMaxPooling1D()(shared_lstm_layer(target_prem))
 		shared_target_hypo = GlobalMaxPooling1D()(shared_lstm_layer(target_hypo))
 		
+		shared_drop1 = Dropout(self.drop_prob)
+		shared_dense1 = Dense(self.dense_dim, kernel_initializer='uniform', activation='relu')
+		shared_drop2 = Dropout(self.drop_prob)
+		shared_dense2 = Dense(2, activation='softmax')
+		
+		def adversarial_loss(prem, hypo, label):		
+			# Gradient Reversal Layer
+			flip_gradient = GradientReversal(1)
+			flip_prem = flip_gradient(prem)
+			flip_hypo = flip_gradient(hypo)
+			
+			# merge and pass it to dense layer	
+			merged = Concatenate()([flip_prem, flip_hypo, submult(flip_prem,flip_hypo)])
+			dense = shared_drop1(merged)
+			dense = shared_dense1(dense)
+			dense = shared_drop2(dense)
+			out = shared_dense2(dense)
+			adv_loss = K.mean(K.categorical_crossentropy(label, out))
+			return adv_loss
+		
 		# Mergeing shared vectors and pass it to dense layer (adversarial training with gradient reversal layer)
 		if self.is_adv:
-			self.adv_loss = self.adversarial_loss(shared_source_prem, shared_source_hypo, source_task_input) \
-								+ self.adversarial_loss(shared_target_prem, shared_target_hypo, target_task_input)
+			self.adv_loss = adversarial_loss(shared_source_prem, shared_source_hypo, source_task_input) \
+								+ adversarial_loss(shared_target_prem, shared_target_hypo, target_task_input)
 		
 		# final representation: shared + private concatenated
 		source_prem_encoded = Concatenate()([shared_source_prem, private_source_prem])
@@ -173,7 +179,7 @@ class Multimodel(object):
 		
 		STAMP = 'lstm_%d_%d_%.1f' % (self.lstm_dim, self.dense_dim, self.drop_prob)
 		
-		filepath= checkpoint_dir + STAMP + "_%s_%s_{val_dense_8_acc:.2f}.h5"%(source_language, target_language)
+		filepath= checkpoint_dir + STAMP + "_%s_{val_dense_6_acc:.2f}_%s_{val_dense_8_acc:.2f}.h5"%(source_language, target_language)
 		checkpoint = ModelCheckpoint(filepath, monitor='val_dense_8_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='max')
 
 		lr_sched = ReduceLROnPlateau(monitor='val_dense_8_loss', factor=0.2, patience=1, cooldown=1, verbose=1)
