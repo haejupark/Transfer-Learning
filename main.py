@@ -188,7 +188,7 @@ if __name__ == "__main__":
 	parser.add_argument('--source_language', type=str, default='en', help='source_language')
 	parser.add_argument('--target_language', type=str, default='es', help='target_language')
 	parser.add_argument('--is_train', type=str, default=True, help='Training Mode')
-	parser.add_argument('--is_adv', type=str, default=True, help='whether apply adversarial training or not')
+	parser.add_argument('--is_adv', type=str, default=True, help='whether  apply adversarial training or not')
 	params = parser.parse_args()
 	
 	setting = settings.Setting()
