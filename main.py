@@ -18,7 +18,7 @@ from keras.utils import *
 np.random.seed(3)
 
 class Multimodel(object):
-	def __init__(self,setting,is_train=True,is_adv=True):
+	def __init__(self,setting,is_train,is_adv):
 		self.lr = setting.lr
 		self.word_dim = setting.word_dim
 		self.lstm_dim = setting.lstm_dim
@@ -41,7 +41,8 @@ class Multimodel(object):
 		# Gradient Reversal Layer
 		flip_gradient = GradientReversal(1)
 		flip_prem = flip_gradient(prem)
-		flip_hypo = flip_gradient(hypo)		
+		flip_hypo = flip_gradient(hypo)
+		
 		# merge and pass it to dense layer	
 		merged = Concatenate()([flip_prem, flip_hypo, submult(flip_prem,flip_hypo)])
 		dense = Dropout(self.drop_prob)(merged)
@@ -58,7 +59,7 @@ class Multimodel(object):
 		preds = Dense(3, activation='softmax')(dense)
 		return preds
 		
-	def train_model(self, source_language, target_language):	
+	def train_model(self, source_language, target_language):		
 		# Load source data (english)
 		source_train_name = self.train_dir+"multinli.train.%s.txt"%source_language
 		source_dev_name = self.dev_dir+"xnli_%s.txt"%source_language
@@ -70,8 +71,8 @@ class Multimodel(object):
 		source_word_vocab = get_vocab(source_train_data + source_dev_data)	
 		source_word_embeddings = get_embeddings(source_word_vocab, source_embeddings_name, setting.word_dim)
 
-		source_train_X, source_train_Y, source_train_Z, \
-			source_val_X, source_val_Y, source_val_Z = create_train_dev_set(source_train_data, source_dev_data, source_word_vocab)
+		source_train_X, source_train_Y, source_train_Z, source_train_L, \
+			source_val_X, source_val_Y, source_val_Z, source_val_L = create_train_dev_set(source_train_data, source_dev_data, source_word_vocab)
 		
 		if source_train_X is None:
 			print("++++++ Unable to train model +++++++")
@@ -88,23 +89,26 @@ class Multimodel(object):
 		target_word_vocab = get_vocab(target_train_data + target_dev_data)	
 		target_word_embeddings = get_embeddings(target_word_vocab, target_embeddings_name, setting.word_dim)
 
-		target_train_X, target_train_Y, target_train_Z, \
-			target_val_X, target_val_Y, target_val_Z = create_train_dev_set(target_train_data, target_dev_data, target_word_vocab)
+		target_train_X, target_train_Y, target_train_Z, target_train_L, \
+			target_val_X, target_val_Y, target_val_Z, target_val_L = create_train_dev_set(target_train_data, target_dev_data, target_word_vocab)
 		
 		if target_train_X is None:
 			print("++++++ Unable to train model +++++++")
 			return None	
-		#############################################################		
+		#############################################################			
 		# Word embedding layer for source and target language	
 		source_embedding_layer = Embedding(len(source_word_vocab), self.word_dim, weights=[source_word_embeddings], input_length=(self.max_len,), trainable=False)
 		target_embedding_layer = Embedding(len(target_word_vocab), self.word_dim, weights=[target_word_embeddings], input_length=(self.max_len,), trainable=False)
 		
-		# Input
+		# Inputs
 		source_prem_input = Input(shape=(self.max_len,), dtype='int32')
 		source_hypo_input = Input(shape=(self.max_len,), dtype='int32')
 		
 		target_prem_input = Input(shape=(self.max_len,), dtype='int32')
 		target_hypo_input = Input(shape=(self.max_len,), dtype='int32')
+		
+		source_task_input = Input(shape=(2,))
+		target_task_input = Input(shape=(2,))
 		
 		# Look up Embeddings
 		source_prem = source_embedding_layer(source_prem_input)
@@ -112,32 +116,31 @@ class Multimodel(object):
 		
 		target_prem = target_embedding_layer(target_prem_input)
 		target_hypo = target_embedding_layer(target_hypo_input)
-			
+				
 		# LSTM Encoder for Source Language, Target Language, and for Both
 		source_lstm_layer = Bidirectional(CuDNNLSTM(self.lstm_dim, return_sequences=True))
 		target_lstm_layer = Bidirectional(CuDNNLSTM(self.lstm_dim, return_sequences=True))
 		
 		shared_lstm_layer = Bidirectional(CuDNNLSTM(self.lstm_dim, return_sequences=True))
 		
-		# Maxpooling LSTM encdoes vectors
+		# Maxpooling LSTM encdoes vectors		
 		private_source_prem = GlobalMaxPooling1D()(source_lstm_layer(source_prem))
 		private_source_hypo = GlobalMaxPooling1D()(source_lstm_layer(source_hypo))
 		
 		private_target_prem = GlobalMaxPooling1D()(target_lstm_layer(target_prem))
 		private_target_hypo = GlobalMaxPooling1D()(target_lstm_layer(target_hypo))
 		
-		# Maxpooling Shared LSTM encodes vectors
+		# Maxpooling Shared LSTM encodes vectors		
 		shared_source_prem = GlobalMaxPooling1D()(shared_lstm_layer(source_prem))
 		shared_source_hypo = GlobalMaxPooling1D()(shared_lstm_layer(source_hypo))
 		
 		shared_target_prem = GlobalMaxPooling1D()(shared_lstm_layer(target_prem))
 		shared_target_hypo = GlobalMaxPooling1D()(shared_lstm_layer(target_hypo))
 		
-
 		# Mergeing shared vectors and pass it to dense layer (adversarial training with gradient reversal layer)
 		if self.is_adv:
-			self.adv_loss = self.adversarial_loss(shared_source_prem, shared_source_hypo, to_categorical(np.zeros(self.batch_size),2)) \
-								+ self.adversarial_loss(shared_target_prem, shared_target_hypo, to_categorical(np.ones(self.batch_size),2))
+			self.adv_loss = self.adversarial_loss(shared_source_prem, shared_source_hypo, source_task_input) \
+								+ self.adversarial_loss(shared_target_prem, shared_target_hypo, target_task_input)
 		
 		# final representation: shared + private concatenated
 		source_prem_encoded = Concatenate()([shared_source_prem, private_source_prem])
@@ -146,15 +149,15 @@ class Multimodel(object):
 		target_prem_encoded = Concatenate()([shared_target_prem, private_target_prem])
 		target_hypo_encoded = Concatenate()([shared_target_hypo, private_target_hypo])
 		
-		# Merging two LSTM encodes vectors from sentences
+		# Merging two premise and hypothesis
 		source_merged = Concatenate()([source_prem_encoded, source_hypo_encoded, submult(source_prem_encoded,source_hypo_encoded)])	
 		target_merged = Concatenate()([target_prem_encoded, target_hypo_encoded, submult(target_prem_encoded,target_hypo_encoded)])
 
-		# final classifier for each task
+		# pass classifier for each task
 		source_preds = self.classifier(source_merged)
 		target_preds = self.classifier(target_merged)
 		
-		model = Model([source_prem_input, source_hypo_input, target_prem_input, target_hypo_input], [source_preds, target_preds])
+		model = Model([source_prem_input, source_hypo_input, source_task_input, target_prem_input, target_hypo_input, target_task_input], [source_preds, target_preds])
 		if self.is_adv:
 			model.add_loss(self.adv_loss*self.lambda1)
 		
@@ -176,8 +179,8 @@ class Multimodel(object):
 		lr_sched = ReduceLROnPlateau(monitor='val_dense_8_loss', factor=0.2, patience=1, cooldown=1, verbose=1)
 		early_stopping = EarlyStopping(monitor='val_dense_8_acc', patience=10)
 		
-		model.fit([source_train_X, source_train_Y, target_train_X, target_train_Y], [source_train_Z, target_train_Z], 
-				validation_data = ([source_val_X, source_val_Y, target_val_X, target_val_Y], [source_val_Z, target_val_Z]),
+		model.fit([source_train_X, source_train_Y, source_train_L, target_train_X, target_train_Y, target_train_L], [source_train_Z, target_train_Z], 
+				validation_data = ([source_val_X, source_val_Y, source_val_L, target_val_X, target_val_Y, target_val_L], [source_val_Z, target_val_Z]),
 				epochs=self.epochs, batch_size = self.batch_size, shuffle = True,
 				callbacks=[checkpoint, lr_sched, early_stopping])	
 
@@ -188,7 +191,7 @@ if __name__ == "__main__":
 	parser.add_argument('--source_language', type=str, default='en', help='source_language')
 	parser.add_argument('--target_language', type=str, default='es', help='target_language')
 	parser.add_argument('--is_train', type=str, default=True, help='Training Mode')
-	parser.add_argument('--is_adv', type=str, default=True, help='whether  apply adversarial training or not')
+	parser.add_argument('--is_adv', type=str, default=True, help='whether to apply adversarial training or not')
 	params = parser.parse_args()
 	
 	setting = settings.Setting()
