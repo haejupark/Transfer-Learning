@@ -71,7 +71,7 @@ class Multimodel(object):
 		source_word_embeddings = get_embeddings(source_word_vocab, source_embeddings_name, setting.word_dim)
 
 		source_train_X, source_train_Y, source_train_Z, \
-			source_val_X, source_val_Y, source_val_Z	= create_train_dev_set(source_train_data, source_dev_data, source_word_vocab)
+			source_val_X, source_val_Y, source_val_Z = create_train_dev_set(source_train_data, source_dev_data, source_word_vocab)
 		
 		if source_train_X is None:
 			print("++++++ Unable to train model +++++++")
@@ -89,7 +89,7 @@ class Multimodel(object):
 		target_word_embeddings = get_embeddings(target_word_vocab, target_embeddings_name, setting.word_dim)
 
 		target_train_X, target_train_Y, target_train_Z, \
-			target_val_X, target_val_Y, target_val_Z	= create_train_dev_set(target_train_data, target_dev_data, target_word_vocab)
+			target_val_X, target_val_Y, target_val_Z = create_train_dev_set(target_train_data, target_dev_data, target_word_vocab)
 		
 		if target_train_X is None:
 			print("++++++ Unable to train model +++++++")
