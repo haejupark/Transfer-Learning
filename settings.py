@@ -11,9 +11,9 @@ class Setting(object):
 		self.batch_size = 1024
 		self.epochs = 50
 		self.lambda1 = 0.005
-		self.train_dir = "data/xnli-mt/multinli/"
-		self.dev_dir = "data/xnli/"
-		self.embed_dir = "../aaai2019/data/"
+		self.train_dir = ""
+		self.dev_dir = ""
+		self.embed_dir = ""
 
 labels = {'neutral':0, 'entailment':1, 'contradiction':2}
 labels_reverse = {0:'neutral', 1:'entailment', 2:'contradiction'}
